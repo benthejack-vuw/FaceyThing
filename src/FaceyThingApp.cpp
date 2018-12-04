@@ -10,7 +10,7 @@ using namespace ci::app;
 
 class FaceyThingApp : public App {
   public:
-	  void setup() override;
+	void setup() override;
     void update() override;
     void draw() override;
 
@@ -22,23 +22,25 @@ class FaceyThingApp : public App {
 
 void FaceyThingApp::setup()
 {
-    setWindowSize(1920, 1080);
-    _capture = std::shared_ptr<CameraCapture>( new CameraCapture(1920, 1080) );
+    setWindowSize(1280, 720);
+    _capture = std::shared_ptr<CameraCapture>( new CameraCapture(1280, 720) );
     // _tracker = std::shared_ptr<FaceTracker>( new FaceTracker() );
 }
 
 void FaceyThingApp::update(){
     _capture->update();
-    _capture->print_faces();
     // _faces = *_tracker->faces(_capture->surface());
 }
 
 void FaceyThingApp::draw()
 {
 	gl::clear();
-  gl::color( ColorA( 1, 1, 1, 1 ) );
+    gl::color( ColorA( 1, 1, 1, 1 ) );
 	gl::draw( _capture->texture());
-  //
+  
+	_capture->print_faces();
+
+	//
   //   gl::color( ColorA( 1, 1, 0, 0.45f ) );
   //   for( std::vector<Rectf>::const_iterator faceIter = _faces.begin(); faceIter != _faces.end(); ++faceIter ){
   //       gl::drawSolidRect( *faceIter );

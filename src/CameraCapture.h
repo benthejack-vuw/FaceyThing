@@ -33,6 +33,7 @@ private:
     cinder::Surface8uRef _surface;
     cinder::gl::TextureRef _texture;
     cinder::CaptureRef _capture;
+	bool _read;
 };
 
 
