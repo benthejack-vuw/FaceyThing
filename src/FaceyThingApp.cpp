@@ -2,7 +2,7 @@
 #include "cinder/app/RendererGl.h"
 #include "cinder/gl/gl.h"
 #include "CameraCapture.h"
-// #include "FaceTracker.h"
+#include "FaceTracker.h"
 
 
 using namespace ci;
@@ -15,7 +15,7 @@ class FaceyThingApp : public App {
     void draw() override;
 
     std::shared_ptr<CameraCapture>	_capture;
-    // std::shared_ptr<FaceTracker>    _tracker;
+	std::shared_ptr<FaceTracker>    _tracker;
     //
     // std::vector<cinder::Rectf>       _faces;
 };
@@ -29,6 +29,7 @@ void FaceyThingApp::setup()
 
 void FaceyThingApp::update(){
     _capture->update();
+	_tracker->update(_capture->surface);
     // _faces = *_tracker->faces(_capture->surface());
 }
 
@@ -38,8 +39,6 @@ void FaceyThingApp::draw()
     gl::color( ColorA( 1, 1, 1, 1 ) );
 	gl::draw( _capture->texture());
   
-	_capture->print_faces();
-
 	//
   //   gl::color( ColorA( 1, 1, 0, 0.45f ) );
   //   for( std::vector<Rectf>::const_iterator faceIter = _faces.begin(); faceIter != _faces.end(); ++faceIter ){

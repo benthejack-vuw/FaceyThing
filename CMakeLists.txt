@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.12.0)
 project(FaceyThing)
 
-find_package(dlib CONFIG REQUIRED)
 find_package(OpenCV CONFIG REQUIRED)
 
 #get_filename_component( CINDER_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../Cinder" ABSOLUTE)
@@ -43,5 +42,4 @@ ci_make_app(
     #RESOURCES   ${APP_PATH}/../../data/models/8lbs.obj
 )
 target_include_directories(${FACEYTHING_TARGET} PRIVATE ${OpenCV_INCLUDE_DIRS})
-target_link_libraries(${FACEYTHING_TARGET} dlib::dlib)
 target_link_libraries(${FACEYTHING_TARGET} ${OpenCV_LIBS})
