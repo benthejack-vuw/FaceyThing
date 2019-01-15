@@ -1,0 +1,31 @@
+{
+  "window":{
+    "fullscreen" : true,
+    "resolution" : {
+      "width" : 1920,
+      "height": 1080
+    }
+  },
+
+  "camera" : {
+    "name" : "Logitech HD Pro Webcam C910",
+    "resolution" : {
+      "width" : 1920,
+      "height": 1080
+    }
+  },
+
+  "tracking" : {
+    "scale_factor" : 4
+  },
+
+  "painter" : {
+    "wipe_speed"  : 0.0005,
+    "noise_scale" : 0.004
+  },
+
+  "collage" : {
+    "extra_boxes" : 0,
+    "rotation_amount" : 0
+  }
+}

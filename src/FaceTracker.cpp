@@ -1,100 +1,108 @@
 #include "FaceTracker.h"
-
-#include <opencv2/imgproc.hpp>
-#include <opencv2/dnn.hpp>
-
-#include "CameraCapture.h"
+#include "CinderOpenCV.h"
+#include "cinder/app/App.h"
 #include "cinder/Log.h"
-#include "cinder/gl/gl.h"
-#include "CinderOpenCv.h"
 
-const cv::Scalar meanVal(104.0, 177.0, 123.0);
-const std::string tensorflowConfigFile = "C:/Users/Ben/Desktop/Work/FaceyThing/build/FaceyThing/Debug/opencv_face_detector.pbtxt";
-const std::string tensorflowWeightFile = "C:/Users/Ben/Desktop/Work/FaceyThing/build/FaceyThing/Debug/opencv_face_detector_uint8.pb";
+FaceTracker::FaceTracker(int calculation_scale):
+	_calculation_scale(calculation_scale),
+	_frame_count(0)
+{
 
-cv::dnn::Net net;
+	_detector = std::shared_ptr<FaceDetector>(
+		new FaceDetector(
+			ci::app::getAssetPath("deploy.prototxt").generic_string(),
+			ci::app::getAssetPath("res10_300x300_ssd_iter_140000_fp16.caffemodel").generic_string()
+		)
+	);
 
-FaceTracker::FaceTracker() {
-	_frame_count = 0;
-	net = cv::dnn::readNetFromTensorflow(tensorflowWeightFile, tensorflowConfigFile);
+	_tracker = std::shared_ptr<ObjectTracker>(new ObjectTracker());
+	_landmark_detector = std::shared_ptr<LandmarkDetector>(new LandmarkDetector(ci::app::getAssetPath("lbfmodel.yaml").generic_string()));
 }
+
 
 void FaceTracker::update(ci::Surface8uRef capture) {
 
-	update_images(capture);
-	update_trackers();
+	try {
+		update_frame(capture);
 
-	if (_frame_count % 10 == 0) {
-		_faces = find_faces();
-		if (_faces.size() != _trackers.size()) {
-			correlate_faces();
+		if (_frame_count % 15 == 0) {
+			_detector->detect_faces(_resized_frame);
+			_tracker->correlate_regions(_detector->faces(), _resized_frame);
+		}
+
+		_tracker->track(_resized_frame);
+		_landmark_detector->detect(_resized_frame, _tracker->tracked_regions());
+
+		_frame_count++;
+	}
+	catch(cv::Exception e) {
+		CI_LOG_EXCEPTION("error in facetracker update", e);
+	}
+}
+
+
+void FaceTracker::update_frame(ci::Surface8uRef capture) {
+	cv::Mat unscaled = ci::toOcv(*capture); 
+
+	int scaledWidth = capture->getWidth() / _calculation_scale;
+	int scaledHeight = capture->getHeight() / _calculation_scale;
+	_resized_frame = cv::Mat(scaledHeight, scaledWidth, unscaled.type());
+	cv::resize(unscaled, _resized_frame, _resized_frame.size(), 0, 0, cv::INTER_LINEAR);
+}
+
+
+std::vector<cv::Rect2f> FaceTracker::detected_faces() {
+	return _detector->faces();
+}
+
+std::vector<cv::Rect> FaceTracker::tracker_regions() {
+	return _tracker->tracked_regions();
+}
+
+std::vector<ci::Rectf> FaceTracker::screenspace_tracker_rects() {
+	std::vector<ci::Rectf> out;
+	for each(cv::Rect2f r in tracker_regions()) {
+		out.emplace_back(r.tl().x*_calculation_scale,
+			r.tl().y*_calculation_scale,
+			r.br().x*_calculation_scale,
+			r.br().y*_calculation_scale);
+	}
+	return out;
+}
+
+std::vector<ci::Rectf> FaceTracker::screenspace_detected_faces() {
+	std::vector<ci::Rectf> out;
+	for each(cv::Rect2f r in _detector->faces()) {
+		out.emplace_back(r.tl().x*_calculation_scale,
+			r.tl().y*_calculation_scale,
+			r.br().x*_calculation_scale,
+			r.br().y*_calculation_scale);
+	}
+	return out;
+}
+
+std::vector<ci::vec2> FaceTracker::screenspace_face_centroids() {
+	std::vector<ci::vec2> out;
+	std::vector<ci::Rectf> rects = screenspace_tracker_rects();
+	for each(ci::Rectf r in rects) {
+		out.push_back(r.getCenter());
+	}
+	return out;
+}
+
+std::vector<std::vector<ci::vec2>> FaceTracker::screenspace_facial_landmarks() {
+	std::vector<std::vector<ci::vec2>> out;
+
+	if (_frame_count > 0) {
+		for each (std::vector<cv::Point2f> face in _landmark_detector->landmarks()) {
+			std::vector<ci::vec2> ci_face;
+			for each (cv::Point2f p in face) {
+				ci_face.push_back(ci::vec2(p.x*_calculation_scale, p.y*_calculation_scale));
+			}
+			out.push_back(ci_face);
 		}
 	}
 
-	remove_dead_trackers();
-	_frame_count++;
+	return out;
 }
 
-ci::vec2 rect_centroid(cv::Rect rect) {
-	float rcx = rect.tl.x + rect.width / 2.0f;
-	float rcy = rect.tl.y + rect.height / 2.0f;
-	return ci::vec2(rcx, rcy);
-}
-
-float centroid_dist(cv::Rect r1, cv::Rect r2) {
-	ci::vec2 c1 = rect_centroid(r1);
-	ci::vec2 c2 = rect_centroid(r2);
-	return ci::distance(c1, c2);
-}
-
-void FaceTracker::correlate_faces() {
-
-	
-}
-
-void FaceTracker::update_trackers() {
-	
-}
-
-void FaceTracker::remove_dead_trackers() {
-	for (int i = 0; i < _trackers.size(); ++i) {
-		//CI_LOG_D(_trackers[i].get_position());
-	}
-}
-
-void FaceTracker::update_images(ci::Surface8uRef capture) {
-	cv::Mat image = ci::toOcv(*capture);
-	const int calcscale = 2;
-
-	int scaledWidth = capture->getWidth() / calcscale;
-	int scaledHeight = capture->getHeight() / calcscale;
-	_scaledCVImage = cv::Mat(scaledHeight, scaledWidth, image.type());
-	cv::resize(image, _scaledCVImage, _scaledCVImage.size(), 0, 0, cv::INTER_LINEAR);
-}
-
-std::vector<cv::Rect> FaceTracker::find_faces() {
-	cv::Mat inputBlob = cv::dnn::blobFromImage(_scaledCVImage, 1, _scaledCVImage.size(), mean(_scaledCVImage), false, false);
-
-	net.setInput(inputBlob, "data");
-	cv::Mat detection = net.forward("detection_out");
-	cv::Mat detectionMat(detection.size[2], detection.size[3], CV_8U, detection.ptr<float>());
-
-	std::vector<cv::Rect> out_vec;
-	for (int i = 0; i < detectionMat.rows; i++)
-	{
-		float confidence = detectionMat.at<float>(i, 2);
-		if (confidence > 0.75)
-		{
-			int x1 = static_cast<int>(detectionMat.at<float>(i, 3) * _scaledCVImage.size().width);
-			int y1 = static_cast<int>(detectionMat.at<float>(i, 4) * _scaledCVImage.size().height);
-			int x2 = static_cast<int>(detectionMat.at<float>(i, 5) * _scaledCVImage.size().width);
-			int y2 = static_cast<int>(detectionMat.at<float>(i, 6) * _scaledCVImage.size().height);
-			int width = abs(x2 - x1);
-			int height = abs(y2 - y1);
-
-			out_vec.emplace_back(x1, y1, x2, y2);
-		}
-	}
-
-	return out_vec;
-}
