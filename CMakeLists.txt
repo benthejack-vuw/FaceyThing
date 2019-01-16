@@ -24,9 +24,12 @@ set( FACEYTHING_SOURCES
      ${APP_PATH}/src/LandmarkDetector.h
      ${APP_PATH}/src/FaceTracker.h
      ${APP_PATH}/src/FacialComponents.h
+     ${APP_PATH}/src/CollageItem.h
      ${APP_PATH}/src/FaceCollage.h
      ${APP_PATH}/src/FacePainter.h
      ${APP_PATH}/src/SceneManager.h
+     ${APP_PATH}/src/FaceyThing.h
+     ${APP_PATH}/src/FaceMesh.h
 
 
      ${APP_PATH}/src/FaceyThingApp.cpp
@@ -36,9 +39,12 @@ set( FACEYTHING_SOURCES
      ${APP_PATH}/src/LandmarkDetector.cpp
      ${APP_PATH}/src/FaceTracker.cpp
      ${APP_PATH}/src/FacialComponents.cpp
+     ${APP_PATH}/src/CollageItem.cpp
      ${APP_PATH}/src/FaceCollage.cpp
      ${APP_PATH}/src/FacePainter.cpp
      ${APP_PATH}/src/SceneManager.cpp
+     ${APP_PATH}/src/FaceyThing.cpp
+     ${APP_PATH}/src/FaceMesh.cpp
      ${APP_PATH}/src/json.hpp
 )
 

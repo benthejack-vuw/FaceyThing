@@ -24,6 +24,8 @@ public:
 
 	FacialComponents(int buffer_size = 30) :_buffer_size(buffer_size) {};
 
+	static std::vector< ci::Rectf(*)(std::vector<ci::vec2>) > update_functions();
+
 	static ci::Rectf left_eye(std::vector<ci::vec2> points);
 	static ci::Rectf right_eye(std::vector<ci::vec2> points);
 	static ci::Rectf nose(std::vector<ci::vec2> points);

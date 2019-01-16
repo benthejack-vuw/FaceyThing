@@ -31,7 +31,10 @@ void FaceTracker::update(ci::Surface8uRef capture) {
 		}
 
 		_tracker->track(_resized_frame);
-		_landmark_detector->detect(_resized_frame, _tracker->tracked_regions());
+
+		mark_faces_to_delete();
+		update_landmarks(_tracker->trackers());
+		delete_marked_faces();
 
 		_frame_count++;
 	}
@@ -39,6 +42,51 @@ void FaceTracker::update(ci::Surface8uRef capture) {
 		CI_LOG_EXCEPTION("error in facetracker update", e);
 	}
 }
+
+void FaceTracker::update_landmarks(std::vector<TrackerData> &trackers) {
+
+	for each(TrackerData d in trackers) {
+		//possible speedup by linking indices of rects with outputs
+		std::vector<cv::Point2f> points = _landmark_detector->detect(_resized_frame, d.bounds)[0];
+		update_face_data(d, points);
+	}
+
+}
+
+void FaceTracker::mark_faces_to_delete() {
+	for (int i = 0; i < _faces.size(); ++i) {
+		_faces[i].marked_to_delete = true;
+	}
+}
+
+void FaceTracker::delete_marked_faces() {
+	for (int i = 0; i < _faces.size(); ++i) {
+		if (_faces[i].marked_to_delete) {
+			_faces.erase(_faces.begin() + i);
+			i--;
+		}
+	}
+}
+
+void FaceTracker::update_face_data(TrackerData td, std::vector<cv::Point2f> face_points) {
+	
+	bool found = false;
+
+	for (int i = 0; i < _faces.size(); ++i) {
+		if (_faces[i].global_index == td.global_index) {
+			_faces[i].bounds = screen_space(td.bounds);
+			_faces[i].landmarks = screen_space(face_points);
+			_faces[i].marked_to_delete = false;
+			found = true;
+		}
+	}
+
+	if (!found) {
+		TrackedFace new_face = {td.global_index, screen_space(td.bounds), screen_space(face_points), false};
+		_faces.push_back(new_face);
+	}
+}
+
 
 
 void FaceTracker::update_frame(ci::Surface8uRef capture) {
@@ -51,58 +99,24 @@ void FaceTracker::update_frame(ci::Surface8uRef capture) {
 }
 
 
-std::vector<cv::Rect2f> FaceTracker::detected_faces() {
-	return _detector->faces();
+std::vector<TrackedFace> FaceTracker::faces() {
+	return _faces;
 }
 
-std::vector<cv::Rect> FaceTracker::tracker_regions() {
-	return _tracker->tracked_regions();
-}
 
-std::vector<ci::Rectf> FaceTracker::screenspace_tracker_rects() {
-	std::vector<ci::Rectf> out;
-	for each(cv::Rect2f r in tracker_regions()) {
-		out.emplace_back(r.tl().x*_calculation_scale,
-			r.tl().y*_calculation_scale,
-			r.br().x*_calculation_scale,
-			r.br().y*_calculation_scale);
-	}
-	return out;
-}
-
-std::vector<ci::Rectf> FaceTracker::screenspace_detected_faces() {
-	std::vector<ci::Rectf> out;
-	for each(cv::Rect2f r in _detector->faces()) {
-		out.emplace_back(r.tl().x*_calculation_scale,
-			r.tl().y*_calculation_scale,
-			r.br().x*_calculation_scale,
-			r.br().y*_calculation_scale);
-	}
-	return out;
-}
-
-std::vector<ci::vec2> FaceTracker::screenspace_face_centroids() {
+std::vector<ci::vec2> FaceTracker::screen_space(std::vector<cv::Point2f> points) {
 	std::vector<ci::vec2> out;
-	std::vector<ci::Rectf> rects = screenspace_tracker_rects();
-	for each(ci::Rectf r in rects) {
-		out.push_back(r.getCenter());
+	for each (cv::Point2f p in points) {
+		out.emplace_back(p.x*_calculation_scale, p.y*_calculation_scale);
 	}
 	return out;
 }
 
-std::vector<std::vector<ci::vec2>> FaceTracker::screenspace_facial_landmarks() {
-	std::vector<std::vector<ci::vec2>> out;
-
-	if (_frame_count > 0) {
-		for each (std::vector<cv::Point2f> face in _landmark_detector->landmarks()) {
-			std::vector<ci::vec2> ci_face;
-			for each (cv::Point2f p in face) {
-				ci_face.push_back(ci::vec2(p.x*_calculation_scale, p.y*_calculation_scale));
-			}
-			out.push_back(ci_face);
-		}
-	}
-
-	return out;
+ci::Rectf FaceTracker::screen_space(cv::Rect2f rect) {
+	return ci::Rectf(
+		rect.tl().x*_calculation_scale, 
+		rect.tl().y*_calculation_scale,
+		rect.br().x *_calculation_scale, 
+		rect.br().y*_calculation_scale
+	);
 }
-

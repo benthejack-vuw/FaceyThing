@@ -4,61 +4,54 @@
 
 using namespace ci;
 
-FaceCollage::FaceCollage(int extra_parts) : _extra_part_count(extra_parts) {
-	randSeed(std::chrono::system_clock::now().time_since_epoch().count());
-	for (int i = 0; i < 100000; ++i) {
-		_randomized_indices.push_back(randInt(100000));
+FaceCollage::FaceCollage(TrackedFace face, int part_count, float rotation_multiplier, int smooth_level){
+	//this is a list of function pointers from facial components - the pointers are randomly assigned to each element
+
+	Area f(face.landmarks);
+	add_static_element(rotation_multiplier, smooth_level, &FacialComponents::left_eye);
+	add_static_element(rotation_multiplier, smooth_level, &FacialComponents::right_eye);
+	add_static_element(rotation_multiplier, smooth_level, &FacialComponents::mouth);
+
+	for (int i = 0; i < part_count; ++i) {
+		add_random_element(rotation_multiplier, smooth_level);
 	}
 }
 
-void FaceCollage::set_extra_boxes_count(int part_count) {
-	_extra_part_count = part_count;
+std::shared_ptr<CollageItem> FaceCollage::last_element() {
+	return _elements[_elements.size() - 1];
 }
 
-void FaceCollage::set_rotation_amount(float rotation_amount) {
-	_rotation_amount = rotation_amount;
+void FaceCollage::add_static_element(float rotation_multiplier, float smooth_level, UpdateFunction update) {
+	CollageItemStatic * cis = new CollageItemStatic(randFloat(3.14159 * rotation_multiplier), smooth_level);
+	cis->position_update_function = update;
+	CollageItemRef s(cis);
+	_elements.push_back(s);
+	set_update_func(last_element());
 }
 
-void FaceCollage::draw(gl::Texture2dRef tex, std::vector<ci::Rectf> faces, std::vector<std::vector<ci::vec2>> points) {
-	std::vector<ci::Rectf> parts = _components.averaged_face_parts(points);
-	std::vector<ci::vec2>  main_locations = _components.averaged_centroids(points);
+void FaceCollage::add_random_element(float rotation_multiplier, float smooth_level) {
+	vec2 p(cosf(randFloat(0, 6.2831852)), sinf(randFloat(0, 6.2831852)));
+	CollageItemRandom * cir = new CollageItemRandom(p, rotation_multiplier, smooth_level);
+	_elements.push_back(CollageItemRef(cir));
+	set_update_func(last_element());
+}
 
+void FaceCollage::set_update_func(CollageItemRef item) {
+	std::vector< ci::Rectf(*)(std::vector<ci::vec2>) > update_functions = _components.update_functions();
+	last_element()->update_function = update_functions[randInt(0, update_functions.size())];
+}
 
-	gl::color(ColorA(1, 1, 1, 1));
-	for (int i = 0; i < faces.size(); ++i) {
-
-		for (int j = 0; j < _extra_part_count; ++j) {
-			Area part = Area(parts[_randomized_indices[i*j+(i+j)] % (int)parts.size()]);
-			float d = (_randomized_indices[i*j + (i + j)] / 100000.0+0.3)*faces[i].getWidth()/2.0;
-			float t = (_randomized_indices[i*j + (i + j)*2] / 100000.0)*6.2831852;
-			vec2 loc = faces[i].getCenter() + vec2(cos(t)*d, sin(t)*d);
-			Area dest = Area(loc.x - part.getWidth() / 2.0, loc.y - part.getHeight() / 2.0, loc.x + part.getWidth() / 2.0, loc.y + part.getHeight() / 2.0);
-			
-			float e = _randomized_indices[i+j] / 100000.0;
-			dest.expand(dest.getWidth()*e*0.3, dest.getHeight()*e*0.3);
-
-
-			gl::pushMatrices();
-			gl::translate(dest.getCenter());
-			gl::rotate(3.1415926 * _rotation_amount * (0.5-(_randomized_indices[(i*j+i+j*3 * 100) % _randomized_indices.size()] / 100000.0)));
-			gl::translate(-dest.getCenter());
-			gl::draw(tex, part, Rectf(dest));
-			gl::popMatrices();
-		}
-
+void FaceCollage::update(TrackedFace this_face, const std::vector<TrackedFace> &all_faces){
+	_bounds = this_face.bounds;
+	for (int i = 0; i < _elements.size(); ++i) {
+		_elements[i]->update(this_face, all_faces);
 	}
 
+}
 
-	for (int i = 0; i < main_locations.size(); ++i) {
-		Area part = Area(parts[_randomized_indices[i] % (int)parts.size()]);
-		Area dest = Area(main_locations[i].x - part.getWidth()/2.0, main_locations[i].y - part.getHeight() / 2.0, main_locations[i].x + part.getWidth() / 2.0, main_locations[i].y + part.getHeight() / 2.0);
-		dest.expand(dest.getWidth()*0.5, dest.getHeight()*0.5);
-		
-		gl::pushMatrices();
-		gl::translate(dest.getCenter());
-		gl::rotate(3.1415926 *_rotation_amount* (0.5-(_randomized_indices[(i*100)%_randomized_indices.size()]/100000.0)));
-		gl::translate(-dest.getCenter());
-		gl::draw(tex, part, Rectf(dest));
-		gl::popMatrices();
+void FaceCollage::draw(ci::gl::Texture2dRef tex, int element_count) {
+	int draw_to = element_count >= 0 ? element_count : _elements.size();
+	for (int i = 0; i < draw_to; ++i) {
+		_elements[i]->draw(tex);
 	}
 }

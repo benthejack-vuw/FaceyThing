@@ -1,6 +1,7 @@
 #pragma once
 
-#include "cinder/gl/VboMesh.h"
+#include "FaceMesh.h"
+#include "FacePainter.h"
 #include "cinder/gl/Fbo.h"
 #include "cinder/gl/GlslProg.h"
 #include "cinder/gl/Texture.h"
@@ -11,29 +12,23 @@ public:
 
 	void set_wipe_speed(float wipe_speed);
 	void set_noise_scale(float noise_scale);
-	
-	void draw(std::vector<std::vector<ci::vec2>> landmarks, ci::gl::Texture2dRef tex);
+	void render_face(std::shared_ptr<FaceMesh>, ci::gl::Texture2dRef tex);
+	void draw(ci::gl::Texture2dRef tex);
+	void set_hue_rotate_speed(float hue_rotate_speed);
+
 
 private:
-
-	void setup_mesh();
-	void setup_fbos();
 	void setup_shaders();
-
-	void generate_delaunay_mesh(std::vector<ci::vec2> points);
-	ci::vec2 center(std::vector<ci::vec2>);
-	std::vector<ci::vec2> normalize_points(std::vector<ci::vec2>);
-	void draw_to_fbo(ci::gl::Texture2dRef tex);
+	void setup_fbos();
+	void FacePainter::swap_buffer();
 	void bleed();
 	int last_buffer();
-	void add_point_to_vboiter(ci::gl::VboMesh::MappedAttrib<ci::vec3> &vbo_pos, ci::gl::VboMesh::MappedAttrib<ci::vec2> &tex_pos, ci::gl::VboMesh::MappedAttrib<ci::vec2> &custom_pos, ci::vec3 p, ci::Area a);
-
 
 	ci::vec2 _window_resolution, _camera_resolution;
 	ci::gl::GlslProgRef _paint_shader, _bleed_shader;
 	std::vector<ci::gl::FboRef> _fbos;
 	ci::gl::Texture2dRef _noise_texture, _colour_overlay_texture;
-	ci::gl::VboMeshRef _face_mesh;
-	int _tri_count, _current_buffer;
-	float _noise_progress;
+
+	int _current_buffer;
+	float _noise_progress, _hue, _hue_rotate_speed;
 };

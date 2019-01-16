@@ -8,8 +8,12 @@ bool withinRect(cv::Point2f p, cv::Rect2f r);
 bool centroid_within(cv::Rect2f centroid, cv::Rect2f within);
 //--------------------------------------------------------------------------------------------------------------
 
+int _global_object_index;
 
-ObjectTracker::ObjectTracker() {}
+ObjectTracker::ObjectTracker()
+{
+	_global_object_index = 0;
+}
 
 void ObjectTracker::update_trackers(const cv::Mat &frame) {
 	for (int i = 0; i < _trackers.size(); ++i) {
@@ -93,11 +97,13 @@ void ObjectTracker::add_tracker(cv::Rect rect, int face_index, const cv::Mat &fr
 	trackerData.bounds = cv::Rect(rect);
 	trackerData.linked_face_index = face_index;
 	trackerData.find_misses = 0;
+	trackerData.global_index = _global_object_index;
 
 	trackerData.tracker = cv::TrackerMOSSE::create();
 	trackerData.tracker->init(frame, trackerData.bounds);
 
 	_trackers.push_back(trackerData);
+	_global_object_index++;
 }
 
 

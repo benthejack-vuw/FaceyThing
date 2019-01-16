@@ -29,5 +29,5 @@ private:
 struct TrackerData {
 	cv::Ptr<cv::Tracker> tracker;
 	cv::Rect2d bounds;
-	int linked_face_index, find_misses;
+	int global_index, linked_face_index, find_misses;
 };

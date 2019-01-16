@@ -20,6 +20,15 @@ VectorSubset noseRange         = { 27, 35 };
 VectorSubset mouthRange        = { 48, 59 };
 
 
+std::vector< ci::Rectf(*)(std::vector<ci::vec2>) > FacialComponents::update_functions() {
+	std::vector< ci::Rectf(*)(std::vector<ci::vec2>) > out;
+	out.push_back(&left_eye);
+	out.push_back(&right_eye);
+	out.push_back(&mouth);
+	return out;
+}
+
+
 ci::Rectf FacialComponents::left_eye(std::vector<ci::vec2> points) {
 	return FacialComponents::bounds_of_point_list_subset(points, leftEyeRange, ci::vec2(0.25,0.5));
 }

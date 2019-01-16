@@ -1,49 +1,59 @@
-#include "json.hpp"
-
 #include "cinder/app/App.h"
 #include "cinder/app/RendererGl.h"
-#include "cinder/gl/gl.h"
 #include "cinder/Log.h"
-
-#include "CinderOpenCV.h"
-
-#include "CameraCapture.h"
-#include "FaceTracker.h"
-#include "FacialComponents.h"
-#include "FacePainter.h"
-#include "FaceCollage.h"
 #include "cinder/Rand.h"
+#include "cinder/gl/gl.h"
+#include "cinder/gl/scoped.h"
 
-#include "FacialComponents.h"
-#include "OMeshVBO.h"
+#include "json.hpp"
+#include "CameraCapture.h"
+#include "FaceyThing.h"
+#include "FacePainter.h"
+#include "FaceTracker.h"
 
 using namespace ci;
 using namespace ci::app;
 
 using json = nlohmann::json;
 
+std::vector<int> FaceyThing::stages;
+Rectf FaceyThing::camera_bounds;
+
 class FaceyThingApp : public App {
 public:
 	void setup() override;
 	void update() override;
 	void draw() override;
+	
 
+private:
+	void correlate_faces(std::vector<TrackedFace> &faces);
+	FaceyThing &add_face(TrackedFace & tf);
+	void mark_faces_for_deletion();
+	void update_faces(std::vector<TrackedFace> &faces);
+	void delete_marked_faces();
+	int max_stage();
 
 	std::shared_ptr<CameraCapture>	_capture;
-	std::shared_ptr<FaceTracker>    _tracker;
-	std::shared_ptr<FaceCollage>    _collage;
-	std::shared_ptr <FacePainter>   _painter;
-
 	json _settings;
-
 	vec2 _camera_resolution, _window_resolution;
+
+	std::shared_ptr<FaceTracker>    _tracker;
+	std::shared_ptr <FacePainter>   _painter;
+	std::vector<FaceyThing>         _facey_things;
+
+	float _background_fade;
+	float _scale_up;
 };
 
 void FaceyThingApp::setup()
 {
-	ifstream raw_settings(loadAsset("settings.json")->getFilePath());
+	randSeed(std::chrono::system_clock::now().time_since_epoch().count());
+	std::ifstream raw_settings(loadAsset("settings.json")->getFilePath());
 	raw_settings >> _settings;
 	_camera_resolution   = vec2(_settings["camera"]["resolution"]["width"], _settings["camera"]["resolution"]["height"]);
+	_capture = std::shared_ptr<CameraCapture>(new CameraCapture(_camera_resolution, _settings["camera"]["name"]));
+	_background_fade = 0.0;
 
 	if (_settings["window"]["fullscreen"]) {
 		setFullScreen(true);
@@ -55,16 +65,20 @@ void FaceyThingApp::setup()
 	}
 
 
-    _capture = std::shared_ptr<CameraCapture>( new CameraCapture(_camera_resolution, _settings["camera"]["name"]) );
-    _tracker = std::shared_ptr<FaceTracker>  ( new FaceTracker(_settings["tracking"]["scale_factor"]) );
+	_scale_up = (float)_settings["face"]["scale_up"];
 
-	_painter = std::shared_ptr<FacePainter>  ( new FacePainter(_window_resolution, _camera_resolution ) );
-		_painter->set_wipe_speed( _settings["painter"]["wipe_speed"] );
-		_painter->set_noise_scale( _settings["painter"]["noise_scale"] );
+	_tracker = std::shared_ptr<FaceTracker>(new FaceTracker(_settings["tracking"]["scale_factor"]));
 
-	_collage = std::shared_ptr<FaceCollage>  ( new FaceCollage() );
-		_collage->set_extra_boxes_count(_settings["collage"]["extra_boxes"]);
-		_collage->set_rotation_amount(_settings["collage"]["rotation_amount"]);
+	_painter = std::shared_ptr<FacePainter>(new FacePainter(_window_resolution, vec2(_settings["camera"]["resolution"]["width"], _settings["camera"]["resolution"]["height"])));
+	_painter->set_wipe_speed(_settings["painter"]["wipe_speed"]);
+	_painter->set_noise_scale(_settings["painter"]["noise_scale"]);
+	_painter->set_hue_rotate_speed((float)_settings["painter"]["hue_rotate_speed"]);
+
+	FaceyThing::stages.push_back(_settings["stages"]["one"]);
+	FaceyThing::stages.push_back(_settings["stages"]["two"]);
+	FaceyThing::stages.push_back(_settings["stages"]["three"]);
+	FaceyThing::camera_bounds = Rectf(vec2(0,0),_camera_resolution);
+
 }
 
 void FaceyThingApp::update(){
@@ -78,29 +92,128 @@ void FaceyThingApp::update(){
 		}
 	}
 
+	correlate_faces(_tracker->faces());
+}
+
+void FaceyThingApp::correlate_faces(std::vector<TrackedFace> &faces){
+	mark_faces_for_deletion();
+	update_faces(faces);
+	delete_marked_faces();
+}
+
+
+void FaceyThingApp::mark_faces_for_deletion() {
+	for (int i = 0; i < _facey_things.size(); ++i) {
+		_facey_things[i].marked_for_deletion = true;
+	}
+}
+
+void FaceyThingApp::update_faces(std::vector<TrackedFace> &faces) {
+	for (int i = 0; i < faces.size(); ++i) {
+		bool found = false;
+		for (int j = 0; j < _facey_things.size(); ++j) {
+			if (_facey_things[j].index() == faces[i].global_index) {
+				_facey_things[j].update(faces[i], faces);
+				_facey_things[j].marked_for_deletion = false;
+				found = true;
+			}
+		}
+		if (!found) {
+			add_face(faces[i]).update(faces[i], faces);
+		}
+	}
+}
+
+int FaceyThingApp::max_stage() {
+	int max = 0;
+	int stage;
+	for (int i = 0; i < _facey_things.size(); ++i) {
+		stage = _facey_things[i].stage();
+		max = stage > max ? stage : max;
+	}
+	return max;
+}
+
+FaceyThing & FaceyThingApp::add_face(TrackedFace & tf) {
+	_facey_things.emplace_back(tf.global_index);
+	_facey_things[_facey_things.size() - 1].setup_collage(
+		tf,
+		_settings["collage"]["box_count"],
+		_settings["collage"]["rotation"],
+		_settings["collage"]["smoothing"]
+	);
+
+	_facey_things[_facey_things.size() - 1].setup_paint_mesh(
+		_camera_resolution
+	);
+
+	return _facey_things[_facey_things.size() - 1];
+}
+
+void FaceyThingApp::delete_marked_faces() {
+	for (int i = 0; i < _facey_things.size(); ++i) {
+		if (_facey_things[i].marked_for_deletion) {
+			_facey_things.erase(_facey_things.begin() + i);
+			i--;
+		}
+	}
 }
 
 void FaceyThingApp::draw()
 {
-	gl::ScopedMatrices();
+	gl::pushMatrices();
 	gl::ScopedViewport vp(_window_resolution);
 	gl::setMatricesWindow(_camera_resolution);
 
+	gl::color(ci::ColorA(1, 1, 1, 1));
+	gl::drawSolidRect(Rectf(vec2(0, 0), _camera_resolution));
 
-	gl::color(ColorA(1, 1, 1,1));
-	gl::drawSolidRect(Rectf(0, 0, _window_resolution.x, _window_resolution.y));
+	gl::color(ci::ColorA(1, 1, 1, 1.0-_background_fade));
+	gl::draw(_capture->texture());
 
-	
-    gl::color( ColorA( 1, 1, 1, 0.2 ) );	
-	gl::draw( _capture->texture());
+	gl::color(ci::ColorA(1, 1, 1, 1));
+	for each(FaceyThing ft in _facey_things) {
+		gl::ScopedViewport vp4(_window_resolution);
+		gl::setMatricesWindow(_camera_resolution);
+		ft.draw_detection(_capture->texture());
 
-	gl::color(ColorA(1, 1, 1, 1));
+		gl::pushMatrices();
+		gl::translate(ft.face().bounds.getCenter());
+		gl::scale(_scale_up, _scale_up);
+		gl::translate(-ft.face().bounds.getCenter());
+		ft.draw_mesh_to(_painter, _capture->texture());
+		gl::popMatrices();
+	}
 
-	std::vector<std::vector<ci::vec2>> landmarks = _tracker->screenspace_facial_landmarks();
-	
-	_painter->draw(landmarks, _capture->texture());
-	_collage->draw(_capture->texture(), _tracker->screenspace_tracker_rects(), landmarks);
-	
+	{
+		gl::ScopedViewport vp2(_window_resolution);
+		gl::setMatricesWindow(_window_resolution);
+		_painter->draw(_capture->texture());
+	}
+
+
+	gl::ScopedViewport vp3(_window_resolution);
+	gl::setMatricesWindow(_camera_resolution);
+	for each(FaceyThing ft in _facey_things) {
+		gl::pushMatrices();
+		gl::translate(ft.face().bounds.getCenter());
+		gl::scale(_scale_up, _scale_up);
+		gl::translate(-ft.face().bounds.getCenter());
+			ft.draw_mesh(_capture->texture());
+			ft.draw_collage(_capture->texture());
+		gl::popMatrices();
+	}
+
+	gl::popMatrices();
+
+	if (max_stage() > 0) {
+		_background_fade += (float)_settings["background"]["fade_speed"];
+	}else {
+		_background_fade -= (float)_settings["background"]["fade_speed"];
+	}
+
+	_background_fade = _background_fade > _settings["background"]["max_opacity"] ? _settings["background"]["max_opacity"] : _background_fade;
+	_background_fade = _background_fade < _settings["background"]["min_opacity"] ? _settings["background"]["min_opacity"] : _background_fade;
 }
 
 CINDER_APP( FaceyThingApp, RendererGl )
