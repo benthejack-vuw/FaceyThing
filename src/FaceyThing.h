@@ -12,7 +12,7 @@ public:
 
 	FaceyThing(int face_index);
 	void setup_collage(TrackedFace &face, int part_count, float rotation_multiplier, int smooth_level);
-	void setup_paint_mesh(ci::vec2 camera_resolution);
+	void setup_paint_mesh(ci::vec2 camera_resolution, float fade_speed);
 
 	int  index();
 	void update(TrackedFace &face, std::vector<TrackedFace> &all_faces);
@@ -30,6 +30,10 @@ public:
 
 	bool marked_for_deletion;
 private:
+
+	float _fade;
+	float _fade_in;
+	float _fade_speed;
 	int _face_index;
 	TrackedFace _face;
 	std::shared_ptr<FaceCollage> _collage;

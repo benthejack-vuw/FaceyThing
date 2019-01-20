@@ -3,6 +3,7 @@
 uniform sampler2D texture;
 uniform sampler2D color_overlay;
 uniform float hue_rotate;
+uniform float fade;
 
 in vec2 blend_pos;
 in vec2 tex_coord_0;
@@ -45,5 +46,5 @@ void main()
     colour_grad.z*=1.1;
     colour_grad = hsv2rgb(colour_grad);
     colour_grad.rgb *= lum;
-    outColor = vec4(colour_grad.rgb, 1.0);
+    outColor = vec4(colour_grad.rgb, fade);
 }

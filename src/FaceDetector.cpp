@@ -1,12 +1,14 @@
 #include "FaceDetector.h"
 #include "cinder/Log.h"
+#include "cinder/app/App.h"
+#include "cinder/gl/gl.h"
 
 using namespace cv;
 
 FaceDetector::FaceDetector(std::string config_file, std::string weight_file) {
 	_net = cv::dnn::readNetFromCaffe(config_file, weight_file);
 
-	//_faceCascade.load("C:/Users/Ben/Documents/work/FaceyThing/build/FaceyThing/Release/haarcascade_frontalface_alt.xml");
+	_faceCascade.load(ci::app::getAssetPath("haarcascade_frontalface_default.xml").generic_string());
 }
 
 void FaceDetector::detect_faces(const cv::Mat &frame) {
@@ -40,19 +42,18 @@ void FaceDetector::detect_faces(const cv::Mat &frame) {
 	}
 }
 
-/*std::vector<cv::Rect2f> FaceDetector::find_faces_HAAR(cv::Mat frame) {
+
+void FaceDetector::detect_faces_HAAR(cv::Mat &frame) {
+	_detected_faces.clear();
 	std::vector<cv::Rect> detected_faces;
-	_faceCascade.detectMultiScale(_grey_image, detected_faces);
+	_faceCascade.detectMultiScale(frame, detected_faces);
 
-
-	std::vector<cv::Rect2f> out;
 	for (std::vector<cv::Rect>::const_iterator faceIter = detected_faces.begin(); faceIter != detected_faces.end(); ++faceIter) {
 		cv::Rect2f o(faceIter->x, faceIter->y, faceIter->width, faceIter->height);
-		out.push_back(o);
+		_detected_faces.push_back(o);
+		ci::gl::drawStrokedRect(ci::fromOcv(o));
 	}
-
-	return out;
-}*/
+}
 
 
 std::vector<cv::Rect2f> FaceDetector::faces() {

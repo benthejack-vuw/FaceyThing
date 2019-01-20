@@ -1,11 +1,12 @@
 #include "CameraCapture.h"
 #include "cinder/Log.h"
 #include "cinder/gl/gl.h"
+#include "cinder/gl/scoped.h"
 
 void flip_buffer(cinder::Surface8uRef &buffer_data);
 
 
-CameraCapture::CameraCapture(ci::vec2 resolution, std::string camera_name){
+CameraCapture::CameraCapture(ci::vec2 resolution, float scale_down, std::string camera_name){
 	_frame_available = false;
     try {
 		ci::Capture::DeviceRef d = ci::Capture::findDeviceByName(camera_name);
@@ -16,23 +17,28 @@ CameraCapture::CameraCapture(ci::vec2 resolution, std::string camera_name){
         CI_LOG_EXCEPTION( "Failed to init capture ", exc );
     }
     
-
-    _surface = cinder::Surface8u::create(resolution.x, resolution.y, false);
+	_scaled_image = ci::gl::Fbo::create(resolution.x/scale_down, resolution.y/scale_down, false, false, false);
+	_flipped_image = ci::gl::Fbo::create(resolution.x, resolution.y, false, false, false);
+	_surface = cinder::Surface8u::create(resolution.x, resolution.y, false);
     _texture = cinder::gl::Texture::create(resolution.x, resolution.y);
+	_scaled_texture = cinder::gl::Texture::create(resolution.x/scale_down, resolution.y/ scale_down);
+
 }
 
 void CameraCapture::update(){
 
 	if( _capture && _capture->checkNewFrame() ) {
         _surface = _capture->getSurface();
-		flip_buffer(_surface);
+		flip_buffer();
+		scale_down();
+		//flip_buffer(_surface);
         _texture->update(*_surface);
 		_frame_available = true;
     }
 }
 
-cinder::gl::TextureRef CameraCapture::texture(){
-    return _texture;
+cinder::gl::TextureRef CameraCapture::flipped(){
+    return _flipped_image->getColorTexture();
 }
 
 cinder::Surface8uRef CameraCapture::surface(){
@@ -44,29 +50,34 @@ bool CameraCapture::frame_available() {
 	return _frame_available;
 }
 
-void flip_buffer(cinder::Surface8uRef &buffer_data) {
+void CameraCapture::flip_buffer() {
+	_flipped_image->bindFramebuffer();
+	ci::gl::pushMatrices();
+	ci::gl::ScopedViewport vp4(_flipped_image->getSize());
+	ci::gl::setMatricesWindow(_flipped_image->getSize());
+	ci::gl::translate(_flipped_image->getSize().x, 0);
+	ci::gl::scale(-1, 1);
+	ci::gl::color(ci::ColorA(1, 1, 1, 1));
+	ci::gl::draw(_texture);
+	ci::gl::popMatrices();
+	_flipped_image->unbindFramebuffer();
+}
 
-	uint8_t * dat = buffer_data->getData();
-	int x = 0;
-	int y = 0;
-	int tempVal;
-	int tempVal2;
+void CameraCapture::scale_down() {
+	_scaled_image->bindFramebuffer();
+	ci::gl::ScopedViewport vp4(_scaled_image->getSize());
+	ci::gl::setMatricesWindow(_scaled_image->getSize());
+	ci::gl::color(ci::ColorA(1, 1, 1, 1));
+	ci::gl::draw(_flipped_image->getColorTexture(), ci::Area(_surface->getBounds()), _scaled_image->getBounds());
+	_scaled_image->unbindFramebuffer();
+	_scaled_surface = ci::Surface8u::create(_scaled_image->readPixels8u(_scaled_image->getBounds()));
+	_scaled_texture->update(*_scaled_surface);
+}
 
+cinder::Surface8uRef CameraCapture::scaled_surface() {
+	return _scaled_surface;
+}
 
-	int w = buffer_data->getWidth();
-	int h = buffer_data->getHeight();
-
-	for (int i = 0; i < 3; i++) {
-		for (y = 0; y < h; y++) {
-			for (x = 0; x < w / 2; x++) {
-
-				tempVal = (int)dat[((y*w) + (w - 1 - x)) * 3 + i];
-				tempVal2 = (int)dat[((y*w) + (x)) * 3 + i];
-
-				dat[((y*w) + (x)) * 3 + i] = tempVal;
-				dat[((y*w) + (w - 1 - x)) * 3 + i] = tempVal2;
-
-			}
-		}
-	}
+cinder::gl::Texture2dRef CameraCapture::scaled_texture() {
+	return _scaled_texture;//_scaled_image->getColorTexture();
 }

@@ -26,6 +26,9 @@ public:
 
 	static std::vector< ci::Rectf(*)(std::vector<ci::vec2>) > update_functions();
 
+	static ci::Rectf right_half_dest(std::vector<ci::vec2> points);
+	static ci::Rectf left_half_dest(std::vector<ci::vec2> points);
+
 	static ci::Rectf left_eye(std::vector<ci::vec2> points);
 	static ci::Rectf right_eye(std::vector<ci::vec2> points);
 	static ci::Rectf nose(std::vector<ci::vec2> points);

@@ -8,10 +8,10 @@
   },
 
   "camera" : {
-    "name" : "Logitech HD Pro Webcam C910",
+    "name" : "Logitech BRIO",
     "resolution" : {
-      "width" : 1280,
-      "height": 720
+      "width" : 3840,
+      "height": 2160
     }
   },
 
@@ -28,7 +28,7 @@
   },
 
   "tracking" : {
-    "scale_factor" : 4
+    "scale_factor" : 5
   },
 
   "painter" : {
@@ -36,13 +36,14 @@
     "face_height" : 300,
     "wipe_speed"  : 0.0005,
     "noise_scale" : 0.004,
-    "hue_rotate_speed": 0.0001
+    "hue_rotate_speed": 0.0001,
+    "fade_in_speed": 0.01
   },
 
   "collage" : {
     "box_count" : 0,
     "rotation" : 0,
-    "smoothing" : 20
+    "smoothing" : 2
   },
 
   "face" : {

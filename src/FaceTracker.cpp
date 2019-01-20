@@ -26,14 +26,17 @@ void FaceTracker::update(ci::Surface8uRef capture) {
 		update_frame(capture);
 
 		if (_frame_count % 15 == 0) {
+			CI_LOG_D("ONE");
 			_detector->detect_faces(_resized_frame);
-			_tracker->correlate_regions(_detector->faces(), _resized_frame);
+			CI_LOG_D("TWO");
+
+			_tracker->correlate_regions(_detector->faces(), _grey);
 		}
 
-		_tracker->track(_resized_frame);
+		_tracker->track(_grey);
 
 		mark_faces_to_delete();
-		update_landmarks(_tracker->trackers());
+		update_landmarks();
 		delete_marked_faces();
 
 		_frame_count++;
@@ -43,25 +46,30 @@ void FaceTracker::update(ci::Surface8uRef capture) {
 	}
 }
 
-void FaceTracker::update_landmarks(std::vector<TrackerData> &trackers) {
 
-	for each(TrackerData d in trackers) {
-		//possible speedup by linking indices of rects with outputs
-		std::vector<cv::Point2f> points = _landmark_detector->detect(_resized_frame, d.bounds)[0];
-		update_face_data(d, points);
+void FaceTracker::update_landmarks() {
+
+	//for each(TrackerData d in trackers) {
+	//possible speedup by linking indices of rects with outputs
+	std::vector <cv::Rect> rects = _tracker->tracked_regions();
+	std::vector<std::vector<cv::Point2f>> points = _landmark_detector->detect(_grey, rects);
+		
+	for (int i = 0; i < points.size(); ++i){
+		update_face_data(_tracker->trackers().at(i), points.at(i));
 	}
+	//}
 
 }
 
 void FaceTracker::mark_faces_to_delete() {
 	for (int i = 0; i < _faces.size(); ++i) {
-		_faces[i].marked_to_delete = true;
+		_faces.at(i).marked_to_delete = true;
 	}
 }
 
 void FaceTracker::delete_marked_faces() {
 	for (int i = 0; i < _faces.size(); ++i) {
-		if (_faces[i].marked_to_delete) {
+		if (_faces.at(i).marked_to_delete) {
 			_faces.erase(_faces.begin() + i);
 			i--;
 		}
@@ -73,10 +81,10 @@ void FaceTracker::update_face_data(TrackerData td, std::vector<cv::Point2f> face
 	bool found = false;
 
 	for (int i = 0; i < _faces.size(); ++i) {
-		if (_faces[i].global_index == td.global_index) {
-			_faces[i].bounds = screen_space(td.bounds);
-			_faces[i].landmarks = screen_space(face_points);
-			_faces[i].marked_to_delete = false;
+		if (_faces.at(i).global_index == td.global_index) {
+			_faces.at(i).bounds = screen_space(td.bounds);
+			_faces.at(i).landmarks = screen_space(face_points);
+			_faces.at(i).marked_to_delete = false;
 			found = true;
 		}
 	}
@@ -90,12 +98,11 @@ void FaceTracker::update_face_data(TrackerData td, std::vector<cv::Point2f> face
 
 
 void FaceTracker::update_frame(ci::Surface8uRef capture) {
-	cv::Mat unscaled = ci::toOcv(*capture); 
+	_resized_frame = ci::toOcv(*capture);
+	cvtColor(_resized_frame, _resized_frame, cv::COLOR_RGBA2BGR);
 
-	int scaledWidth = capture->getWidth() / _calculation_scale;
-	int scaledHeight = capture->getHeight() / _calculation_scale;
-	_resized_frame = cv::Mat(scaledHeight, scaledWidth, unscaled.type());
-	cv::resize(unscaled, _resized_frame, _resized_frame.size(), 0, 0, cv::INTER_LINEAR);
+	cvtColor(_resized_frame, _grey, cv::COLOR_BGR2GRAY); // Convert to Gray Scale 
+	cv::equalizeHist(_grey, _grey);
 }
 
 

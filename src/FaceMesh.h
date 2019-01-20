@@ -21,5 +21,5 @@ private:
 	ci::gl::VboMeshRef _face_mesh;
 	int _tri_count;
 	ci::vec2 _translate_point;
-	float _face_height, _scale_amount, _hue_rotate_speed, _hue_rotate;
+	float _face_height, _scale_amount, _hue_rotate_speed, _hue_rotate, _depth;
 };

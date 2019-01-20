@@ -29,20 +29,34 @@ std::vector< ci::Rectf(*)(std::vector<ci::vec2>) > FacialComponents::update_func
 }
 
 
+ci::Rectf FacialComponents::left_half_dest(std::vector<ci::vec2> points) {
+	ci::Area a(points);
+	a.expand(-a.getWidth() / 3, -a.getHeight() / 5.0);
+	a.offset(ci::ivec2(a.getWidth()/2, - a.getHeight()/4));
+	return ci::Rectf(a);
+}
+
+ci::Rectf FacialComponents::right_half_dest(std::vector<ci::vec2> points) {
+	ci::Area a(points);
+	a.expand(-a.getWidth() / 3, -a.getHeight() / 5.0);
+	a.offset(ci::ivec2(-a.getWidth() / 2, -a.getHeight() / 4));
+	return ci::Rectf(a);
+}
+
 ci::Rectf FacialComponents::left_eye(std::vector<ci::vec2> points) {
-	return FacialComponents::bounds_of_point_list_subset(points, leftEyeRange, ci::vec2(0.25,0.5));
+	return FacialComponents::bounds_of_point_list_subset(points, leftEyeRange, ci::vec2(0.5,0));
 }
 
 ci::Rectf FacialComponents::right_eye(std::vector<ci::vec2> points) {
-	return FacialComponents::bounds_of_point_list_subset(points, rightEyeRange, ci::vec2(0.25, 0.5));
+	return FacialComponents::bounds_of_point_list_subset(points, rightEyeRange, ci::vec2(0.5, 0));
 }
 
 ci::Rectf FacialComponents::nose(std::vector<ci::vec2> points) {
-	return FacialComponents::bounds_of_point_list_subset(points, noseRange, ci::vec2(0.125, 0.05));
+	return FacialComponents::bounds_of_point_list_subset(points, noseRange, ci::vec2(0, 0));
 }
 
 ci::Rectf FacialComponents::mouth(std::vector<ci::vec2> points) {
-	return FacialComponents::bounds_of_point_list_subset(points, mouthRange, ci::vec2(0.25, 0.35));
+	return FacialComponents::bounds_of_point_list_subset(points, mouthRange, ci::vec2(0, 0));
 }
 
 std::vector<ci::vec2>  FacialComponents::left_eye_points(std::vector<ci::vec2> points) {

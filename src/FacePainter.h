@@ -12,7 +12,7 @@ public:
 
 	void set_wipe_speed(float wipe_speed);
 	void set_noise_scale(float noise_scale);
-	void render_face(std::shared_ptr<FaceMesh>, ci::gl::Texture2dRef tex);
+	void render_face(std::shared_ptr<FaceMesh>, ci::gl::Texture2dRef tex, float fade);
 	void draw(ci::gl::Texture2dRef tex);
 	void set_hue_rotate_speed(float hue_rotate_speed);
 

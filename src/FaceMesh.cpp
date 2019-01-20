@@ -14,12 +14,13 @@ using namespace std;
 std::vector<cv::Vec6f> triangulation(std::vector<ci::vec2> points, cv::Rect2f bounds);
 bool triangle_in_bounds(cv::Vec6f verts, cv::Rect2f bounds);
 cv::Rect2d expanded_cv_bounding_box(std::vector<ci::vec2> points);
-std::vector<ci::vec3> vec3s_from_cvVec6f(cv::Vec6f verts);
+std::vector<ci::vec3> vec3s_from_cvVec6f(cv::Vec6f verts, float depth);
 //--------------------------------------------------------------------------------------------------------------------------------------
 
 FaceMesh::FaceMesh( ci::vec2 camera_resolution):
 _camera_resolution(camera_resolution)
 {
+	_depth = 0;
 	setup_mesh();
 }
 
@@ -64,9 +65,9 @@ void FaceMesh::generate_delaunay_mesh(std::vector<ci::vec2> points) {
 
 	for (size_t i = 0; i < triangleList.size(); i++)
 	{
-		std::vector<ci::vec3> verts = vec3s_from_cvVec6f(triangleList[i]);
+		std::vector<ci::vec3> verts = vec3s_from_cvVec6f(triangleList.at(i), _depth);
 		// add triangles to vbo only if they are completely within the bounds
-		if (triangle_in_bounds(triangleList[i], bounds))
+		if (triangle_in_bounds(triangleList.at(i), bounds))
 		{
 			add_point_to_vboiter(vbo_pos, tex_pos, custom_pos, verts[0], a);
 			add_point_to_vboiter(vbo_pos, tex_pos, custom_pos, verts[1], a);
@@ -135,10 +136,10 @@ cv::Rect2d expanded_cv_bounding_box(std::vector<ci::vec2> points) {
 	return toOcv(a);
 }
 
-std::vector<ci::vec3> vec3s_from_cvVec6f(cv::Vec6f verts) {
+std::vector<ci::vec3> vec3s_from_cvVec6f(cv::Vec6f verts, float depth) {
 	std::vector<ci::vec3> out;
-	out.emplace_back(verts[0], verts[1], 0);
-	out.emplace_back(verts[2], verts[3], 0);
-	out.emplace_back(verts[4], verts[5], 0);
+	out.emplace_back(verts[0], verts[1], depth);
+	out.emplace_back(verts[2], verts[3], depth);
+	out.emplace_back(verts[4], verts[5], depth);
 	return out;
 }

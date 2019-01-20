@@ -2,27 +2,28 @@
 #include "FacePainter.h"
 #include "cinder/gl/gl.h"
 #include "cinder/gl/scoped.h"
+#include "cinder/Log.h"
 
 FaceyThing::FaceyThing(int face_index):
 	_face_index(face_index),
-	marked_for_deletion(false)
-{}
+	marked_for_deletion(false),
+	_fade(0),
+	_fade_speed(0.01)
+{
+	CI_LOG_D("new");
+}
 
 void FaceyThing::setup_collage(TrackedFace &face, int part_count, float rotation_multiplier, int smooth_level) {
 	_collage = std::shared_ptr<FaceCollage>(new FaceCollage(face, part_count, rotation_multiplier, smooth_level));
 }
 
-void FaceyThing::setup_paint_mesh(ci::vec2 camera_resolution) {
+void FaceyThing::setup_paint_mesh(ci::vec2 camera_resolution, float fade_speed) {
 	_painter_mesh = std::shared_ptr<FaceMesh>(new FaceMesh(camera_resolution));
+	_fade_speed = fade_speed;
 }
 
 void FaceyThing::update(TrackedFace &face, std::vector<TrackedFace> &all_faces){
 	_face = face;
-
-	if (stage_3()) {
-	}
-
-	//no else here we want both mesh and collage to update if stage 3
 
 	if (stage_2()) {
 		_painter_mesh->update(face.landmarks);
@@ -32,7 +33,7 @@ void FaceyThing::update(TrackedFace &face, std::vector<TrackedFace> &all_faces){
 
 
 void FaceyThing::draw_mesh(ci::gl::Texture2dRef texture) {
-	if (stage_2() && !stage_3()) {
+	if (stage_2()) {
 		ci::gl::ScopedGlslProg glslScope(ci::gl::getStockShader(ci::gl::ShaderDef().texture()));
 		texture->bind();
 		_painter_mesh->draw();
@@ -40,8 +41,10 @@ void FaceyThing::draw_mesh(ci::gl::Texture2dRef texture) {
 }
 
 void FaceyThing::draw_mesh_to(std::shared_ptr<FacePainter>painter, ci::gl::Texture2dRef texture) {
-	if (stage_3()) {
-		painter->render_face(_painter_mesh, texture);
+	if (stage_2()) {
+		painter->render_face(_painter_mesh, texture, _fade);
+		_fade += _fade_speed;
+		CI_LOG_D(_fade_in);
 	}
 }
 
@@ -52,8 +55,7 @@ void FaceyThing::draw_collage(ci::gl::Texture2dRef texture) {
 }
 
 void FaceyThing::draw_detection(ci::gl::Texture2dRef texture) {
-	if (stage_1() && ! stage_2()) {
-
+	if (stage_1() && !stage_2()) {
 		ci::Area source(_face.bounds);
 		source.expand(source.getWidth() / 3.0, source.getHeight() / 3.0);
 

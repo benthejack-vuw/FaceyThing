@@ -24,8 +24,8 @@ FacePainter::FacePainter(vec2 window_resolution, vec2 camera_resolution):
 }
 
 void FacePainter::setup_fbos() {
-	_fbos.push_back(gl::Fbo::create(_window_resolution.x, _window_resolution.y, true, false, false));
-	_fbos.push_back(gl::Fbo::create(_window_resolution.x, _window_resolution.y, true, false, false));
+	_fbos.push_back(gl::Fbo::create( _window_resolution.x, _window_resolution.y, true, true, false));
+	_fbos.push_back(gl::Fbo::create(_window_resolution.x, _window_resolution.y, true, true, false));
 }
 
 void FacePainter::set_wipe_speed(float wipe_speed) {
@@ -80,14 +80,15 @@ void FacePainter::setup_shaders() {
 
 
 
-void FacePainter::render_face(std::shared_ptr<FaceMesh> face, ci::gl::Texture2dRef tex){
+void FacePainter::render_face(std::shared_ptr<FaceMesh> face, ci::gl::Texture2dRef tex, float fade){
 	{
 		tex->bind();
-		_fbos[_current_buffer]->bindFramebuffer();
+		_fbos.at(_current_buffer)->bindFramebuffer();
 		gl::ScopedGlslProg glslScope(_paint_shader);
 		_paint_shader->uniform("hue_rotate", _hue);
+		_paint_shader->uniform("fade", fade);
 		face->draw();
-		_fbos[_current_buffer]->unbindFramebuffer();
+		_fbos.at(_current_buffer)->unbindFramebuffer();
 		tex->unbind();
 	}
 
@@ -97,8 +98,8 @@ void FacePainter::render_face(std::shared_ptr<FaceMesh> face, ci::gl::Texture2dR
 }
 
 void FacePainter::bleed() {
-	gl::FboRef texture_fbo     = _fbos[last_buffer()];
-	gl::FboRef draw_target_fbo = _fbos[_current_buffer];
+	gl::FboRef texture_fbo     = _fbos.at(last_buffer());
+	gl::FboRef draw_target_fbo = _fbos.at(_current_buffer);
 
 	gl::pushMatrices();
 	gl::ScopedFramebuffer fbScp(draw_target_fbo);
@@ -126,7 +127,7 @@ void FacePainter::draw(gl::Texture2dRef tex) {
 
 	gl::ScopedViewport vp(_window_resolution);
 	gl::setMatricesWindow(_window_resolution);
-	gl::draw(_fbos[_current_buffer]->getColorTexture());
+	gl::draw(_fbos.at(_current_buffer)->getColorTexture());
 }
 
 int FacePainter::last_buffer() {

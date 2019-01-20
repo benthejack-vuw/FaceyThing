@@ -19,7 +19,7 @@ public:
 
 private:
 	void update_frame(ci::Surface8uRef capture);
-	void update_landmarks(std::vector<TrackerData> &trackers);
+	void update_landmarks();
 	void update_face_data(TrackerData td, std::vector<cv::Point2f> face_points);
 	std::vector<ci::vec2> screen_space(std::vector<cv::Point2f> points);
 	ci::Rectf FaceTracker::screen_space(cv::Rect2f rect);
@@ -28,7 +28,7 @@ private:
 
 	int _calculation_scale;
 	int _frame_count;
-	cv::Mat _resized_frame;
+	cv::Mat _resized_frame, _grey;
 
 	std::shared_ptr<FaceDetector>     _detector;
 	std::shared_ptr<ObjectTracker>    _tracker;

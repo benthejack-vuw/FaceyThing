@@ -34,16 +34,18 @@ CollageItemRandom::CollageItemRandom(vec2 position, float rotation, int smooth_l
 {}
 
 void CollageItem::update(TrackedFace this_face, const std::vector<TrackedFace> &all_faces) {
-	update_source_position(all_faces);
 	update_dest_position(this_face);
+	update_source_position(all_faces);
 }
 
 void CollageItem::update_source_position(const std::vector<TrackedFace> &all_faces) {
 
 	std::vector<ci::vec2> other_face = all_faces.at(_other_face_seed % all_faces.size()).landmarks;
-	Rectf new_source = update_function(other_face);
-	_source_position = Area(smooth(new_source, _source_buffer, _smooth_level, _source_frame_count));
+	Area new_source = Area(update_function(other_face));
+	float ratio = _dest_position.getSize().y / _dest_position.getSize().x;
+	new_source.expand(0, new_source.getHeight()*ratio);
 
+	_source_position = Area(smooth(new_source, _source_buffer, _smooth_level, _source_frame_count));
 }
 
 
@@ -97,7 +99,7 @@ void add_to_buffer(ci::Rectf rect, std::vector<Rectf> &buffer, int smooth_level,
 		buffer.push_back(rect);
 	}
 	else {
-		buffer[counter%buffer.size()] = rect;
+		buffer.at(counter%buffer.size()) = rect;
 	}
 	++counter;
 }
