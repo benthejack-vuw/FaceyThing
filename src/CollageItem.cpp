@@ -42,8 +42,8 @@ void CollageItem::update_source_position(const std::vector<TrackedFace> &all_fac
 
 	std::vector<ci::vec2> other_face = all_faces.at(_other_face_seed % all_faces.size()).landmarks;
 	Area new_source = Area(update_function(other_face));
-	float ratio = _dest_position.getSize().y / _dest_position.getSize().x;
-	new_source.expand(0, new_source.getHeight()*ratio);
+	float ratio = _dest_position.getSize().x / _dest_position.getSize().y;
+	new_source.expand(0, new_source.getWidth()*ratio);
 
 	_source_position = Area(smooth(new_source, _source_buffer, _smooth_level, _source_frame_count));
 }

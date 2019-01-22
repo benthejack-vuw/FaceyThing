@@ -1,6 +1,6 @@
 {
   "window":{
-    "fullscreen" : false,
+    "fullscreen" : true,
     "resolution" : {
       "width" : 1920,
       "height": 1080
@@ -15,10 +15,12 @@
     }
   },
 
-  "background" : {
-    "fade_speed": 0.01,
-    "max_opacity": 0.8,
-    "min_opacity": 0.0
+  "background": {
+    "fade_speed": 0.005,
+    "max_opacity": 0.5,
+    "min_opacity": 0.0,
+    "bar_fade_speed": 0.01,
+    "bar_max_opacity": 0.7
   },
 
   "stages" : {
@@ -28,7 +30,7 @@
   },
 
   "tracking" : {
-    "scale_factor" : 5
+    "scale_factor" : 8
   },
 
   "painter" : {
@@ -36,14 +38,13 @@
     "face_height" : 300,
     "wipe_speed"  : 0.0005,
     "noise_scale" : 0.004,
-    "hue_rotate_speed": 0.0001,
-    "fade_in_speed": 0.01
+    "hue_rotate_speed": 0.0001
   },
 
   "collage" : {
     "box_count" : 0,
     "rotation" : 0,
-    "smoothing" : 2
+    "smoothing" : 6
   },
 
   "face" : {

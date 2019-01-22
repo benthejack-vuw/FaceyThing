@@ -4,7 +4,6 @@
 #include "opencv2/imgproc.hpp"
 #include "cinder/gl/gl.h"
 
-
 #define MAX_FACES 300
 
 using namespace ci;

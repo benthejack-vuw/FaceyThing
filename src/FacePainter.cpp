@@ -97,6 +97,7 @@ void FacePainter::render_face(std::shared_ptr<FaceMesh> face, ci::gl::Texture2dR
 	_hue = _hue > 1 ? _hue - 1 : _hue;
 }
 
+
 void FacePainter::bleed() {
 	gl::FboRef texture_fbo     = _fbos.at(last_buffer());
 	gl::FboRef draw_target_fbo = _fbos.at(_current_buffer);

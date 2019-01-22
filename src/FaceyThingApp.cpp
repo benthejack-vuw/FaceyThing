@@ -151,7 +151,8 @@ FaceyThing & FaceyThingApp::add_face(TrackedFace & tf) {
 
 	_facey_things.at(_facey_things.size() - 1).setup_paint_mesh(
 		_camera_resolution,
-		_settings["painter"]["fade_in_speed"]
+		_settings["background"]["bar_fade_speed"],
+		_settings["background"]["bar_max_opacity"]
 	);
 
 	return _facey_things.at(_facey_things.size() - 1);
@@ -178,6 +179,7 @@ void FaceyThingApp::draw()
 	gl::drawSolidRect(Rectf(vec2(0, 0), _camera_resolution));
 
 	gl::color(ci::ColorA(1, 1, 1, 1.0-_background_fade));
+	//gl::color(ci::ColorA(1, 1, 1, 1));
 	gl::draw(_capture->flipped());
 
 
@@ -185,6 +187,14 @@ void FaceyThingApp::draw()
 	for(int i = 0; i < _facey_things.size(); ++i) {
 		gl::ScopedViewport vp4(_window_resolution);
 		gl::setMatricesWindow(_camera_resolution);
+
+		gl::pushMatrices();
+		gl::translate(_facey_things.at(i).face().bounds.getCenter());
+		gl::scale(_scale_up, _scale_up);
+		gl::translate(-_facey_things.at(i).face().bounds.getCenter());
+		_facey_things.at(i).draw_backbar();
+		gl::popMatrices();
+
 		_facey_things.at(i).draw_detection(_capture->flipped());
 
 		gl::pushMatrices();

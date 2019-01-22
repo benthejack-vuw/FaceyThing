@@ -3,6 +3,7 @@
 #include "cinder/gl/gl.h"
 #include "cinder/gl/scoped.h"
 #include "cinder/Log.h"
+#include "cinder/app/App.h"
 
 FaceyThing::FaceyThing(int face_index):
 	_face_index(face_index),
@@ -17,9 +18,10 @@ void FaceyThing::setup_collage(TrackedFace &face, int part_count, float rotation
 	_collage = std::shared_ptr<FaceCollage>(new FaceCollage(face, part_count, rotation_multiplier, smooth_level));
 }
 
-void FaceyThing::setup_paint_mesh(ci::vec2 camera_resolution, float fade_speed) {
+void FaceyThing::setup_paint_mesh(ci::vec2 camera_resolution, float fade_speed, float max_fade) {
 	_painter_mesh = std::shared_ptr<FaceMesh>(new FaceMesh(camera_resolution));
 	_fade_speed = fade_speed;
+	_max_fade = max_fade;
 }
 
 void FaceyThing::update(TrackedFace &face, std::vector<TrackedFace> &all_faces){
@@ -42,9 +44,7 @@ void FaceyThing::draw_mesh(ci::gl::Texture2dRef texture) {
 
 void FaceyThing::draw_mesh_to(std::shared_ptr<FacePainter>painter, ci::gl::Texture2dRef texture) {
 	if (stage_2()) {
-		painter->render_face(_painter_mesh, texture, _fade);
-		_fade += _fade_speed;
-		CI_LOG_D(_fade_in);
+		painter->render_face(_painter_mesh, texture, 1.0);
 	}
 }
 
@@ -52,6 +52,19 @@ void FaceyThing::draw_collage(ci::gl::Texture2dRef texture) {
 	if (stage_2()) {
 		_collage->draw(texture);
 	}
+}
+
+void FaceyThing::draw_backbar() {
+	ci::Area backbar = ci::Area(_face.bounds);
+
+	backbar.expand(backbar.getWidth()/3.0, ci::app::getWindowHeight());
+	ci::gl::color(ci::ColorA(1, 1, 1, _fade));
+	ci::gl::drawSolidRect(backbar);
+	ci::gl::color(ci::ColorA(1, 1, 1, 1));
+
+	_fade += _fade_speed;
+	_fade = _fade > _max_fade ? _max_fade : _fade;
+
 }
 
 void FaceyThing::draw_detection(ci::gl::Texture2dRef texture) {
