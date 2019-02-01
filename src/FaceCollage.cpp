@@ -4,14 +4,14 @@
 
 using namespace ci;
 
-FaceCollage::FaceCollage(TrackedFace face, int part_count, float rotation_multiplier, int smooth_level){
+FaceCollage::FaceCollage(TrackedFace face, int part_count, float rotation_multiplier, int smooth_level, int line_weight){
 	//this is a list of function pointers from facial components - the pointers are randomly assigned to each element
 
 	std::vector< ci::Rectf(*)(std::vector<ci::vec2>) > dests;
 	dests.push_back(&FacialComponents::left_half_dest);
 	dests.push_back(&FacialComponents::right_half_dest);
 
-	add_static_element(rotation_multiplier, smooth_level, dests.at(randInt(0,dests.size())));
+	//add_static_element(rotation_multiplier, smooth_level, line_weight, dests.at(randInt(0,dests.size())));
 	//add_static_element(rotation_multiplier, smooth_level, &FacialComponents::right_eye);
 	//add_static_element(rotation_multiplier, smooth_level, &FacialComponents::mouth);
 
@@ -24,17 +24,17 @@ std::shared_ptr<CollageItem> FaceCollage::last_element() {
 	return _elements.at(_elements.size() - 1);
 }
 
-void FaceCollage::add_static_element(float rotation_multiplier, float smooth_level, UpdateFunction update) {
-	CollageItemStatic * cis = new CollageItemStatic(randFloat(3.14159 * rotation_multiplier), smooth_level);
+void FaceCollage::add_static_element(float rotation_multiplier, float smooth_level, int line_weight, UpdateFunction update) {
+	CollageItemStatic * cis = new CollageItemStatic(randFloat(3.14159 * rotation_multiplier), smooth_level, line_weight);
 	cis->position_update_function = update;
 	CollageItemRef s(cis);
 	_elements.push_back(s);
 	set_update_func(last_element());
 }
 
-void FaceCollage::add_random_element(float rotation_multiplier, float smooth_level) {
+void FaceCollage::add_random_element(float rotation_multiplier, float smooth_level, int line_weight) {
 	vec2 p(cosf(randFloat(0, 6.2831852)), sinf(randFloat(0, 6.2831852)));
-	CollageItemRandom * cir = new CollageItemRandom(p, rotation_multiplier, smooth_level);
+	CollageItemRandom * cir = new CollageItemRandom(p, rotation_multiplier, smooth_level, line_weight);
 	_elements.push_back(CollageItemRef(cir));
 	set_update_func(last_element());
 }

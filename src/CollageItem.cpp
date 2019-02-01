@@ -15,21 +15,23 @@ void add_to_buffer(ci::Rectf rect, std::vector<Rectf> &buffer, int smooth_level,
 //-------------------------------------------------------------------------------------------------------------
 
 
-CollageItem::CollageItem(float rotation_multiplier, int smooth_level) :
+CollageItem::CollageItem(float rotation_multiplier, int smooth_level, int line_weight) :
 	_smooth_level(smooth_level),
 	_source_frame_count(0),
-	_dest_frame_count(0)
+	_dest_frame_count(0),
+	_line_weight(line_weight)
 {
 	_rotation = randFloat(-3.14159*rotation_multiplier, 3.14159*rotation_multiplier);
 	_other_face_seed = randInt(0, 10000);
 }
 
-CollageItemStatic::CollageItemStatic(float rotation, int smooth_level) :
-	CollageItem(rotation, smooth_level)
+
+CollageItemStatic::CollageItemStatic(float rotation, int smooth_level, int line_weight) :
+	CollageItem(rotation, smooth_level, line_weight)
 {}
 
-CollageItemRandom::CollageItemRandom(vec2 position, float rotation, int smooth_level) :
-	CollageItem(rotation, smooth_level),
+CollageItemRandom::CollageItemRandom(vec2 position, float rotation, int smooth_level, int line_weight) :
+	CollageItem(rotation, smooth_level, line_weight),
 	_position(position)
 {}
 
@@ -79,7 +81,7 @@ void CollageItem::draw(ci::gl::Texture2dRef tex) {
 	gl::translate(-_dest_position.getCenter());
 	gl::draw(tex, _source_position, _dest_position);
 	ci::gl::color(ci::ColorA(158 / 255.0, 44 / 255.0, 160 / 255.0, 1.0));
-	ci::gl::lineWidth(4);
+	ci::gl::lineWidth(_line_weight);
 	ci::gl::drawStrokedRect(_dest_position);
 	ci::gl::lineWidth(1);
 	ci::gl::color(ci::ColorA(1,1,1,1));

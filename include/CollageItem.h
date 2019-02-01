@@ -10,7 +10,7 @@ typedef ci::Rectf(*UpdateFunction)(std::vector<ci::vec2>);
 
 class CollageItem {
 public:
-	CollageItem(float rotation_multiplier, int smooth_level);
+	CollageItem(float rotation_multiplier, int smooth_level, int line_weight);
 	void update(TrackedFace this_face, const std::vector<TrackedFace> &all_faces);
 	void draw(ci::gl::Texture2dRef tex);
 
@@ -26,12 +26,12 @@ protected:
 	ci::Area  _source_position;
 	float _rotation;
 	int _smooth_level, _source_frame_count, _dest_frame_count;
-	int _other_face_seed;
+	int _other_face_seed, _line_weight;
 };
 
 class CollageItemStatic : public CollageItem{
 public:
-	CollageItemStatic(float rotation, int smooth_level);
+	CollageItemStatic(float rotation, int smooth_level, int line_weight);
 	UpdateFunction position_update_function;
 
 protected:
@@ -40,7 +40,7 @@ protected:
 
 class CollageItemRandom : public CollageItem {
 public:
-	CollageItemRandom(ci::vec2 position, float rotation, int smooth_level);
+	CollageItemRandom(ci::vec2 position, float rotation, int smooth_level, int line_weight);
 private:
 	void update_dest_position(TrackedFace &face);
 	ci::vec2 _position;

@@ -10,14 +10,14 @@
 
 class FaceCollage{
 public:
-	FaceCollage(TrackedFace face, int part_count, float rotation_multiplier, int smooth_level);
+	FaceCollage(TrackedFace face, int part_count, float rotation_multiplier, int smooth_level, int line_weight);
 	void update(TrackedFace this_face, const std::vector<TrackedFace> &all_faces);
 	void draw(ci::gl::Texture2dRef tex, int element_count = -1);
 
 private:
 	CollageItemRef last_element();
-	void add_random_element(float rotation_multiplier, float smooth_level);
-	void add_static_element(float rotation_multiplier, float smooth_level, UpdateFunction update);
+	void add_random_element(float rotation_multiplier, float smooth_level, int line_weight);
+	void add_static_element(float rotation_multiplier, float smooth_level, int line_weight, UpdateFunction update);
 
 	void FaceCollage::set_update_func(CollageItemRef item);
 

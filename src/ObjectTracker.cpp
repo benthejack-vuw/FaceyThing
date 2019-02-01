@@ -99,7 +99,7 @@ void ObjectTracker::add_tracker(cv::Rect rect, int face_index, const cv::Mat &fr
 	trackerData.find_misses = 0;
 	trackerData.global_index = _global_object_index;
 
-	trackerData.tracker = cv::TrackerMOSSE::create();
+	trackerData.tracker = cv::TrackerCSRT::create();
 	trackerData.tracker->init(frame, trackerData.bounds);
 
 	_trackers.push_back(trackerData);

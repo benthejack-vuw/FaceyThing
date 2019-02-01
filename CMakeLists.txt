@@ -17,22 +17,25 @@ set( USE_AVX_INSTRUCTIONS ON)
 set( FACEYTHING_TARGET "FaceyThing" )
 
 set( FACEYTHING_SOURCES
-     ${APP_PATH}/src/CinderOpenCV.h
-     ${APP_PATH}/src/CameraCapture.h
-     ${APP_PATH}/src/ObjectTracker.h
-     ${APP_PATH}/src/FaceDetector.h
-     ${APP_PATH}/src/LandmarkDetector.h
-     ${APP_PATH}/src/FaceTracker.h
-     ${APP_PATH}/src/FacialComponents.h
-     ${APP_PATH}/src/CollageItem.h
-     ${APP_PATH}/src/FaceCollage.h
-     ${APP_PATH}/src/FacePainter.h
-     ${APP_PATH}/src/SceneManager.h
-     ${APP_PATH}/src/FaceyThing.h
-     ${APP_PATH}/src/FaceMesh.h
-
-
      ${APP_PATH}/src/FaceyThingApp.cpp
+
+     ${APP_PATH}/include/CinderOpenCV.h
+     ${APP_PATH}/include/CameraCapture.h
+
+     ${APP_PATH}/include/FaceTracker.h
+     ${APP_PATH}/include/ObjectTracker.h
+     ${APP_PATH}/include/FaceDetector.h
+     ${APP_PATH}/include/LandmarkDetector.h
+
+     ${APP_PATH}/include/FacialComponents.h
+     ${APP_PATH}/include/CollageItem.h
+     ${APP_PATH}/include/FaceCollage.h
+
+     ${APP_PATH}/include/FacePainter.h
+     ${APP_PATH}/include/FaceyThing.h
+     ${APP_PATH}/include/FaceMesh.h
+
+
      ${APP_PATH}/src/CameraCapture.cpp
      ${APP_PATH}/src/ObjectTracker.cpp
      ${APP_PATH}/src/FaceDetector.cpp
@@ -42,7 +45,6 @@ set( FACEYTHING_SOURCES
      ${APP_PATH}/src/CollageItem.cpp
      ${APP_PATH}/src/FaceCollage.cpp
      ${APP_PATH}/src/FacePainter.cpp
-     ${APP_PATH}/src/SceneManager.cpp
      ${APP_PATH}/src/FaceyThing.cpp
      ${APP_PATH}/src/FaceMesh.cpp
      ${APP_PATH}/src/json.hpp

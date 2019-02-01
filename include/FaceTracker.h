@@ -4,6 +4,8 @@
 #include "FaceDetector.h"
 #include "ObjectTracker.h"
 #include "LandmarkDetector.h"
+#include "FrameSubtractor.h"
+
 
 #include "cinder/Surface.h"
 #include "cinder/Rect.h"
@@ -15,6 +17,7 @@ public:
 	FaceTracker(int calculation_scale);
 	void update(ci::Surface8uRef);
 	std::vector<TrackedFace> faces();
+	std::vector<cinder::Rectf> subtraction_detection();
 
 
 private:
@@ -33,6 +36,8 @@ private:
 	std::shared_ptr<FaceDetector>     _detector;
 	std::shared_ptr<ObjectTracker>    _tracker;
 	std::shared_ptr<LandmarkDetector> _landmark_detector;
+	std::shared_ptr<FrameSubtractor>  _frame_subtractor;
+
 	std::vector<TrackedFace>          _faces;
 };
 

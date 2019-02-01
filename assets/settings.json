@@ -1,17 +1,19 @@
 {
   "window":{
     "fullscreen" : true,
-    "resolution" : {
-      "width" : 1920,
-      "height": 1080
+    "resolution": {
+      "render_width": 1920,
+      "render_height": 1080,
+      "output_width": 1920,
+      "output_height": 1080
     }
   },
 
-  "camera" : {
-    "name" : "Logitech BRIO",
-    "resolution" : {
-      "width" : 3840,
-      "height": 2160
+  "camera": {
+    "name": "Logitech HD Pro Webcam C920",
+    "resolution": {
+      "width": 1920,
+      "height": 1080
     }
   },
 
@@ -24,13 +26,11 @@
   },
 
   "stages" : {
-    "one": 0,
-    "two": 2,
-    "three": 4
+    "timing": 3
   },
 
   "tracking" : {
-    "scale_factor" : 8
+    "scale_factor" : 4
   },
 
   "painter" : {
@@ -44,7 +44,8 @@
   "collage" : {
     "box_count" : 0,
     "rotation" : 0,
-    "smoothing" : 6
+    "smoothing": 6,
+    "line_weight":1
   },
 
   "face" : {

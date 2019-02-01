@@ -1,3 +1,4 @@
+
 #include "FaceyThing.h"
 #include "FacePainter.h"
 #include "cinder/gl/gl.h"
@@ -11,11 +12,12 @@ FaceyThing::FaceyThing(int face_index):
 	_fade(0),
 	_fade_speed(0.01)
 {
-	CI_LOG_D("new");
+	_start_time = time(0);
 }
 
-void FaceyThing::setup_collage(TrackedFace &face, int part_count, float rotation_multiplier, int smooth_level) {
-	_collage = std::shared_ptr<FaceCollage>(new FaceCollage(face, part_count, rotation_multiplier, smooth_level));
+void FaceyThing::setup_collage(TrackedFace &face, int part_count, float rotation_multiplier, int smooth_level, int line_weight) {
+	_collage = std::shared_ptr<FaceCollage>(new FaceCollage(face, part_count, rotation_multiplier, smooth_level, line_weight));
+	_line_weight = line_weight;
 }
 
 void FaceyThing::setup_paint_mesh(ci::vec2 camera_resolution, float fade_speed, float max_fade) {
@@ -68,16 +70,16 @@ void FaceyThing::draw_backbar() {
 }
 
 void FaceyThing::draw_detection(ci::gl::Texture2dRef texture) {
-	if (stage_1() && !stage_2()) {
+	if (stage_1()) {
 		ci::Area source(_face.bounds);
 		source.expand(source.getWidth() / 3.0, source.getHeight() / 3.0);
 
 		ci::Area dest(_face.bounds);
-		dest.expand(dest.getWidth()/1.5, dest.getHeight()/1.5);
+		dest.expand(dest.getWidth(), dest.getHeight());
 		ci::gl::draw(texture, source, ci::Rectf(dest));
 
 		ci::gl::color(ci::ColorA(158/255.0, 44/255.0, 160/255.0, 1.0));
-		ci::gl::lineWidth(4);
+		ci::gl::lineWidth(_line_weight);
 		ci::gl::drawStrokedRect(dest);
 		ci::gl::lineWidth(1);
 		ci::gl::color(ci::ColorA(1,1,1,1));
@@ -85,27 +87,21 @@ void FaceyThing::draw_detection(ci::gl::Texture2dRef texture) {
 }
 
 
+
 int FaceyThing::index() {
 	return _face_index;
 }
 
 bool FaceyThing::stage_1() {
-	return _face.bounds.calcArea() / camera_bounds.calcArea() > (stages[0] / 100.0);
+	CI_LOG_D(difftime(time(0), _start_time));
+	return difftime(time(0), _start_time) < time_to_change;
 }
 
 bool FaceyThing::stage_2() {
-	return _face.bounds.calcArea() / camera_bounds.calcArea() > (stages[1] / 100.0);
-}
-
-bool FaceyThing::stage_3() {
-	return _face.bounds.calcArea() / camera_bounds.calcArea() > (stages[2] / 100.0);
+	return !stage_1();
 }
 
 int FaceyThing::stage() {
-
-	if(stage_3()){
-		return 3;
-	}
 	if (stage_2()) {
 		return 2;
 	}

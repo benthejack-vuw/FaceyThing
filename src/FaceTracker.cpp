@@ -17,6 +17,7 @@ FaceTracker::FaceTracker(int calculation_scale):
 
 	_tracker = std::shared_ptr<ObjectTracker>(new ObjectTracker());
 	_landmark_detector = std::shared_ptr<LandmarkDetector>(new LandmarkDetector(ci::app::getAssetPath("lbfmodel.yaml").generic_string()));
+	_frame_subtractor = std::shared_ptr<FrameSubtractor>(new FrameSubtractor());
 }
 
 
@@ -26,10 +27,7 @@ void FaceTracker::update(ci::Surface8uRef capture) {
 		update_frame(capture);
 
 		if (_frame_count % 15 == 0) {
-			CI_LOG_D("ONE");
 			_detector->detect_faces(_resized_frame);
-			CI_LOG_D("TWO");
-
 			_tracker->correlate_regions(_detector->faces(), _grey);
 		}
 
@@ -126,4 +124,8 @@ ci::Rectf FaceTracker::screen_space(cv::Rect2f rect) {
 		rect.br().x *_calculation_scale, 
 		rect.br().y*_calculation_scale
 	);
+}
+
+std::vector<cinder::Rectf> FaceTracker::subtraction_detection() {
+	return _frame_subtractor->subtract_and_detect(_grey);
 }
