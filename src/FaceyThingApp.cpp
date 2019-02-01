@@ -269,18 +269,6 @@ void FaceyThingApp::draw()
 	gl::draw( _screen_fbo->getColorTexture(), Area(0,0,_render_resolution.x, _render_resolution.y), Rectf(0,0,_window_resolution.x, _window_resolution.y));
 	gl::popMatrices();
 
-
-//	ci::gl::color(ci::ColorA(158 / 255.0, 44 / 255.0, 160 / 255.0, 1.0));
-	ci::gl::color(ci::ColorA(1, 1, 1, 1));
-
-	std::vector<cinder::Rectf> detected_rects = _tracker->subtraction_detection();
-	for each(ci::Rectf r in detected_rects) {
-		gl::drawSolidRect(r);
-	}
-	ci::gl::color(ci::ColorA(1,1,1,1));
-
-
-
 }
 
 CINDER_APP( FaceyThingApp, RendererGl,  )
