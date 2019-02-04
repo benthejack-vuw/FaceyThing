@@ -39,6 +39,7 @@ void FacePainter::set_noise_scale(float noise_scale) {
 void FacePainter::setup_shaders() {
 
 	try {
+
 		auto noise_img = loadImage(ci::app::loadAsset("perlin_noise.png"));
 		_noise_texture = gl::Texture2d::create(noise_img);
 		_noise_texture->bind(1);
@@ -81,17 +82,14 @@ void FacePainter::setup_shaders() {
 
 
 void FacePainter::render_face(std::shared_ptr<FaceMesh> face, ci::gl::Texture2dRef tex, float fade){
-	{
-		tex->bind();
-		_fbos.at(_current_buffer)->bindFramebuffer();
-		gl::ScopedGlslProg glslScope(_paint_shader);
-		_paint_shader->uniform("hue_rotate", _hue);
-		_paint_shader->uniform("fade", fade);
-		face->draw();
-		_fbos.at(_current_buffer)->unbindFramebuffer();
-		tex->unbind();
-	}
 
+	gl::ScopedTextureBind bound_texture(tex);
+	gl::ScopedFramebuffer bound_buffer(_fbos.at(_current_buffer));
+	gl::ScopedGlslProg glslScope(_paint_shader);
+	_paint_shader->uniform("hue_rotate", _hue);
+	_paint_shader->uniform("fade", fade);
+
+	face->draw();
 
 	_hue += _hue_rotate_speed;
 	_hue = _hue > 1 ? _hue - 1 : _hue;

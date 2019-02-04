@@ -6,6 +6,9 @@
 #include "cinder/Log.h"
 #include "cinder/app/App.h"
 
+using namespace ci;
+using namespace gl;
+
 FaceyThing::FaceyThing(int face_index):
 	_face_index(face_index),
 	marked_for_deletion(false),
@@ -20,10 +23,12 @@ void FaceyThing::setup_collage(TrackedFace &face, int part_count, float rotation
 	_line_weight = line_weight;
 }
 
-void FaceyThing::setup_paint_mesh(ci::vec2 camera_resolution, float fade_speed, float max_fade) {
+void FaceyThing::setup_paint_mesh(vec2 camera_resolution, std::shared_ptr <FacePainter> painter, float scale_up, float fade_speed, float max_fade) {
+	_painter = painter;
 	_painter_mesh = std::shared_ptr<FaceMesh>(new FaceMesh(camera_resolution));
 	_fade_speed = fade_speed;
 	_max_fade = max_fade;
+	_scale_up = scale_up;
 }
 
 void FaceyThing::update(TrackedFace &face, std::vector<TrackedFace> &all_faces){
@@ -36,54 +41,77 @@ void FaceyThing::update(TrackedFace &face, std::vector<TrackedFace> &all_faces){
 }
 
 
-void FaceyThing::draw_mesh(ci::gl::Texture2dRef texture) {
+void FaceyThing::draw_mesh(Texture2dRef texture) {
 	if (stage_2()) {
-		ci::gl::ScopedGlslProg glslScope(ci::gl::getStockShader(ci::gl::ShaderDef().texture()));
+		ScopedGlslProg glslScope(getStockShader(ShaderDef().texture()));
 		texture->bind();
 		_painter_mesh->draw();
 	}
 }
 
-void FaceyThing::draw_mesh_to(std::shared_ptr<FacePainter>painter, ci::gl::Texture2dRef texture) {
-	if (stage_2()) {
-		painter->render_face(_painter_mesh, texture, 1.0);
-	}
-}
-
-void FaceyThing::draw_collage(ci::gl::Texture2dRef texture) {
-	if (stage_2()) {
-		_collage->draw(texture);
-	}
+void FaceyThing::draw_mesh_to(std::shared_ptr<FacePainter>painter, Texture2dRef texture) {
+	painter->render_face(_painter_mesh, texture, 1.0);
 }
 
 void FaceyThing::draw_backbar() {
-	ci::Area backbar = ci::Area(_face.bounds);
+	Area backbar = Area(_face.bounds);
 
-	backbar.expand(backbar.getWidth()/3.0, ci::app::getWindowHeight());
-	ci::gl::color(ci::ColorA(1, 1, 1, _fade));
-	ci::gl::drawSolidRect(backbar);
-	ci::gl::color(ci::ColorA(1, 1, 1, 1));
+	backbar.expand(backbar.getWidth()/3.0, app::getWindowHeight()*2);
+	color(ColorA(1, 1, 1, _fade));
+	drawSolidRect(backbar);
+	color(ColorA(1, 1, 1, 1));
 
 	_fade += _fade_speed;
 	_fade = _fade > _max_fade ? _max_fade : _fade;
-
 }
 
-void FaceyThing::draw_detection(ci::gl::Texture2dRef texture) {
-	if (stage_1()) {
-		ci::Area source(_face.bounds);
+void FaceyThing::draw_detection(Texture2dRef texture) {
+		Area source(_face.bounds);
 		source.expand(source.getWidth() / 3.0, source.getHeight() / 3.0);
 
-		ci::Area dest(_face.bounds);
+		Area dest(_face.bounds);
 		dest.expand(dest.getWidth(), dest.getHeight());
-		ci::gl::draw(texture, source, ci::Rectf(dest));
+		gl::draw(texture, source, Rectf(dest));
 
-		ci::gl::color(ci::ColorA(158/255.0, 44/255.0, 160/255.0, 1.0));
-		ci::gl::lineWidth(_line_weight);
-		ci::gl::drawStrokedRect(dest);
-		ci::gl::lineWidth(1);
-		ci::gl::color(ci::ColorA(1,1,1,1));
+		color(ColorA(158/255.0, 44/255.0, 160/255.0, 1.0));
+		lineWidth(_line_weight);
+		drawStrokedRect(dest);
+		lineWidth(1);
+		color(ColorA(1,1,1,1));
+}
+
+void FaceyThing::scale_around_face(float scale) {
+	gl::translate(face().bounds.getCenter());
+	gl::scale(scale, scale);
+	gl::translate(-face().bounds.getCenter());
+}
+
+void FaceyThing::draw_painter(Texture2dRef texture) {
+	gl::pushMatrices();
+		
+		scale_around_face(_scale_up);
+		
+		draw_backbar();
+		
+		if (stage_2()) {
+			draw_mesh_to(_painter, texture);
+		}
+
+	gl::popMatrices();
+
+	if (stage_1()) {
+		draw_detection(texture);
 	}
+}
+
+void FaceyThing::draw_collage(Texture2dRef texture) {
+	gl::pushMatrices();
+		
+		scale_around_face(_scale_up);
+		draw_mesh(texture);
+		_collage->draw(texture);
+
+	gl::popMatrices();
 }
 
 
@@ -93,7 +121,6 @@ int FaceyThing::index() {
 }
 
 bool FaceyThing::stage_1() {
-	CI_LOG_D(difftime(time(0), _start_time));
 	return difftime(time(0), _start_time) < time_to_change;
 }
 
